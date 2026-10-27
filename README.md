@@ -116,15 +116,58 @@ All automated tests fake HTTP and prevent real email sends. Testbench boots Lara
 
 The GitHub Actions workflow tests Laravel 12 and 13 independently, including lowest compatible dependencies. A local run only verifies the installed versions; check all CI jobs before releasing. `vendor/` and PHPUnit caches are ignored. The lock file pins the default development environment; CI resolves dependencies separately for each matrix job.
 
-### Staging smoke test
+### Live smoke test (production or staging)
 
-Use a staging workspace credential and a verified sender. Set `FIKA_API_URL` explicitly to the staging API (including `/api/v1`), `FIKA_API_KEY`, `FIKA_SMOKE_FROM`, `FIKA_SMOKE_TO` (an inbox you control), and `FIKA_SMOKE_KEY` (a unique persistent key for this smoke test). Keep credentials in your shell environment rather than source control.
+This test sends one real email with a text attachment, then repeats the same request to check idempotency. You can use production if you do not have a staging deployment. The script is named `staging-smoke.php`, but it uses whichever API URL and workspace credential you provide.
+
+Before running it:
+
+- Enable API access for the workspace and create a credential under **Settings → API credentials**. Under **Transactional emails**, enable **Send** (`transactional-emails:send`). **Read** (`transactional-emails:read`) is optional for checking delivery status separately; this script does not need it. Campaign Send permission does not grant transactional Send permission.
+- Use a verified sender identity belonging to the same workspace as the credential, and a recipient inbox you control.
+- The workspace needs an active Marketing Email subscription. The transactional endpoint currently also requires an internal Centipid organization: at least one workspace in the organization must have an active, unsuspended Workspace Administrator with an active account and a verified `@centipidtechnologies.com` email. The administrator's account email determines this eligibility; verifying a sender address alone does not satisfy it.
+
+**1. Set the test values in Bash.** Use the same terminal for all commands below. Replace `/path/to/fika-laravel` with your checkout location, and replace both example email addresses with your verified sender and test inbox.
+
+```bash
+cd /path/to/fika-laravel
+
+export FIKA_API_URL='https://api.fikamessaging.com/api/v1'
+export FIKA_SMOKE_FROM='verified-sender@example.com'
+export FIKA_SMOKE_TO='your-test-inbox@example.com'
+export FIKA_SMOKE_KEY="fika-smoke-$(date -u +%Y%m%dT%H%M%SZ)"
+```
+
+`https://api.fikamessaging.com/api/v1` is the production API base URL. `app.fikamessaging.com` is the web dashboard. If you have a staging API, substitute its versioned base URL and use a credential from that environment. Do not append `/transactional-emails`; the driver adds it.
+
+`export` makes each value available to the PHP script. Generate the smoke key once per intended test email, and preserve it if you need to retry that test.
+
+**2. Enter the API key without displaying it or placing its value in shell history.** Paste these commands exactly as written:
+
+```bash
+read -rsp 'Fika API key: ' FIKA_API_KEY
+echo
+export FIKA_API_KEY
+```
+
+When the terminal prompts **Fika API key:**, paste your actual workspace API key and press Enter. Nothing appears while you paste or type; that is expected. `FIKA_API_KEY` is the variable name: do not replace it with your key in the commands above. Keep the key out of source files, screenshots, and chat messages. These commands set the environment for this terminal session; they do not write a `.env` file.
+
+**3. Run the smoke test.** This sends a real email, including when you use production:
 
 ```bash
 php tools/staging-smoke.php --send
 ```
 
-This sends one real text email with an attachment and replays the same request. Both responses must report `submitted` and the same Fika ID. Confirm exactly one copy arrives and the attachment opens; API acceptance alone does not prove delivery. Reuse the same smoke key and content after an ambiguous failure. Use a new key for a new intended test email.
+Success means both requests report `submitted` and return the same Fika ID. Check the recipient inbox: exactly one copy should arrive, and its attachment should open. API acceptance alone does not prove delivery. The email's subject still says “staging smoke test” even when using production.
+
+If the result is ambiguous, rerun only the PHP command with the same key, sender, recipient, and content. Do not regenerate `FIKA_SMOKE_KEY` when retrying; a new key represents a new intended email.
+
+An HTTP **403** can mean the credential lacks `transactional-emails:send` or the organization does not meet the internal-organization requirement. Check both even if the sender is verified. An HTTP **402** indicates the workspace lacks an active Marketing Email subscription.
+
+When finished, remove the key from this terminal's environment:
+
+```bash
+unset FIKA_API_KEY
+```
 
 ### Releases
 
