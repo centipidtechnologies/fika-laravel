@@ -11,30 +11,16 @@ Send existing Laravel mailables and mail notifications through your Fika workspa
 
 Each product should have its own credential so it can be revoked independently. Store the secret in that application's environment, never in source control or browser code.
 
-## Install locally now
+## Install
 
-This package is currently in `packages/fika-laravel` inside the Fika application repository. It is not published on Packagist. In a consuming Laravel application on this workstation:
-
-```bash
-composer config repositories.fika '{"type":"path","url":"/home/clinton/work/notiva-messaging/packages/fika-laravel","options":{"symlink":true,"versions":{"fika/fika-laravel":"dev-main"}}}'
-composer require fika/fika-laravel:dev-main
-```
-
-Use a path available to your own workstation if different. A path repository must also be available in your build environment. Use a dedicated Git repository for deployed products instead of relying on a development-machine path.
-
-## Install from a private Git repository
-
-Copy the contents of this package directory into the root of a dedicated `fika-laravel` Git repository. Its root must contain this `composer.json`. Tag a tested release, for example `v0.1.0`. Each consuming application then runs:
+The package is not on Packagist. Add the private repository, then require it:
 
 ```bash
-# Replace YOUR_ORG with your actual GitHub organization.
-composer config repositories.fika vcs git@github.com:YOUR_ORG/fika-laravel.git
-composer require fika/fika-laravel:^0.1
+composer config repositories.fika vcs git@github.com:centipidtechnologies/fika-laravel.git
+composer require fikamessaging/email:^0.1
 ```
 
 Composer needs access to the private repository on developer machines and CI. Use your normal SSH/deploy-key or Composer authentication mechanism; do not commit authentication tokens.
-
-You do not need Packagist to use a private package. If you later publish this package on Packagist (or configure a shared Composer registry), consumers can use `composer require fika/fika-laravel` without adding a repository individually. The Composer package name is declared here; it does not create or reserve a public registry entry.
 
 ## Configure
 
