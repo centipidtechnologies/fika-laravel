@@ -1,6 +1,6 @@
 <?php return array(
     'root' => array(
-        'name' => 'fika/fika-laravel',
+        'name' => 'fikamessaging/email',
         'pretty_version' => '1.0.0+no-version-set',
         'version' => '1.0.0.0',
         'reference' => null,
@@ -64,7 +64,7 @@
             'aliases' => array(),
             'dev_requirement' => false,
         ),
-        'fika/fika-laravel' => array(
+        'fikamessaging/email' => array(
             'pretty_version' => '1.0.0+no-version-set',
             'version' => '1.0.0.0',
             'reference' => null,
