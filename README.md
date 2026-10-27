@@ -1,6 +1,6 @@
 # Fika for Laravel
 
-Send existing Laravel mailables and mail notifications through your Fika workspace. Built for Laravel 12 and 13; dependency constraints let Composer select the compatible Symfony version. Transport tests pass against the installed Laravel 12 and Laravel 13 dependencies; host mailer/notification integration tests run on Laravel 13.
+Send existing Laravel mailables and mail notifications through your Fika workspace. Built for Laravel 12 and 13; dependency constraints let Composer select the compatible Symfony version. The package includes transport and Laravel integration tests. CI covers Laravel 12 on PHP 8.2 and Laravel 13 on PHP 8.3/8.5, with lowest and highest compatible dependency jobs.
 
 ## One-time Fika setup
 
@@ -13,14 +13,23 @@ Each product should have its own credential so it can be revoked independently. 
 
 ## Install
 
-The package is not on Packagist. Add the private repository, then require it:
+This package lives in its own Git repository and is not on Packagist. Add the repository to your Laravel application and require the v1 series:
 
 ```bash
 composer config repositories.fika vcs git@github.com:centipidtechnologies/fika-laravel.git
-composer require fikamessaging/email:^0.1
+composer require fika/fika:^1.0
 ```
 
-Composer needs access to the private repository on developer machines and CI. Use your normal SSH/deploy-key or Composer authentication mechanism; do not commit authentication tokens.
+For a private repository, Composer needs SSH/deploy-key access on developer machines and CI. Do not commit authentication tokens. Packagist is not required for a VCS installation.
+
+For local development, point a Composer path repository at your checkout:
+
+```bash
+composer config repositories.fika '{"type":"path","url":"../fika-laravel","options":{"symlink":true}}'
+composer require fika/fika:@dev
+```
+
+Use the tagged VCS release for deployments. Laravel 12 requires PHP 8.2 or later; Laravel 13 requires PHP 8.3 or later. Composer selects compatible framework and Symfony versions.
 
 ## Configure
 
@@ -101,14 +110,30 @@ An uncertain result may already have been sent. Retry using the same key; do not
 
 ## Development and tests
 
-Run `composer install` and `composer test` inside this package after extracting it into its own repository. While developing inside the Fika repository, existing host dependencies can run the package tests:
-
 ```bash
-php vendor/bin/phpunit -c packages/fika-laravel/phpunit.xml
-php artisan test tests/Feature/Mail/FikaLaravelTransportTest.php tests/Feature/Api/TransactionalEmailApiTest.php
+composer install
+composer validate --strict
+composer check-platform-reqs
+composer test
 ```
 
-The unit tests fake HTTP, and the host integration tests exercise Laravel mailables, notifications, sender validation, attachments, and queue event hooks without sending real mail.
+All automated tests fake HTTP and prevent real email sends. Testbench boots Laravel with this package's provider to exercise mailables, attachments, mail notifications, queued mail, sent-message events, configuration overrides, and queue context reset. Transport tests also check rejection paths and attachment boundaries.
+
+The GitHub Actions workflow tests Laravel 12 and 13 independently, including lowest compatible dependencies. A local run only verifies the installed versions; check all CI jobs before releasing. `vendor/` and PHPUnit caches are ignored. The lock file pins the default development environment; CI resolves dependencies separately for each matrix job.
+
+### Staging smoke test
+
+Use a staging workspace credential and a verified sender. Set `FIKA_API_URL` explicitly to the staging API (including `/api/v1`), `FIKA_API_KEY`, `FIKA_SMOKE_FROM`, `FIKA_SMOKE_TO` (an inbox you control), and `FIKA_SMOKE_KEY` (a unique persistent key for this smoke test). Keep credentials in your shell environment rather than source control.
+
+```bash
+php tools/staging-smoke.php --send
+```
+
+This sends one real text email with an attachment and replays the same request. Both responses must report `submitted` and the same Fika ID. Confirm exactly one copy arrives and the attachment opens; API acceptance alone does not prove delivery. Reuse the same smoke key and content after an ambiguous failure. Use a new key for a new intended test email.
+
+### Releases
+
+Keep the existing v1 tag unchanged. Ship follow-up fixes and packaging changes as a new patch release (for example `v1.0.1` if the existing release is `v1.0.0`). Before tagging, require passing CI, run the staging smoke test, and verify installation into a fresh consuming Laravel application with the intended release constraint. Package archives exclude tests and CI configuration.
 
 ## Other languages
 
@@ -118,3 +143,7 @@ Focus on this Laravel driver while most internal products use Laravel. The authe
 
 - [Laravel custom mail transports](https://laravel.com/docs/12.x/mail#custom-transports)
 - [Composer path and VCS repositories](https://getcomposer.org/doc/05-repositories.md)
+
+## License
+
+Licensed under the [MIT License](LICENSE).

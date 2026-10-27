@@ -1,0 +1,45 @@
+name: Tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.2'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            dependencies: lowest
+          - php: '8.2'
+            laravel: '^12.0'
+            testbench: '^10.0'
+            dependencies: highest
+          - php: '8.3'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            dependencies: lowest
+          - php: '8.5'
+            laravel: '^13.0'
+            testbench: '^11.0'
+            dependencies: highest
+    name: PHP ${{ matrix.php }} / Laravel ${{ matrix.laravel }} / ${{ matrix.dependencies }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: mbstring, dom, xml, xmlwriter
+          coverage: none
+      - run: composer validate --strict
+      - run: composer require --dev 'laravel/framework:${{ matrix.laravel }}' 'orchestra/testbench:${{ matrix.testbench }}' --no-update
+      - if: matrix.dependencies == 'lowest'
+        run: composer update --prefer-lowest --prefer-stable --no-interaction --no-progress
+      - if: matrix.dependencies == 'highest'
+        run: composer update --prefer-stable --no-interaction --no-progress
+      - run: composer check-platform-reqs
+      - run: composer test
