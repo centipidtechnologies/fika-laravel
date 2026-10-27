@@ -17,7 +17,7 @@ This package lives in its own Git repository and is not on Packagist. Add the re
 
 ```bash
 composer config repositories.fika vcs git@github.com:centipidtechnologies/fika-laravel.git
-composer require fika/fika:^1.0
+composer require fikamessaging/email:^1.0
 ```
 
 For a private repository, Composer needs SSH/deploy-key access on developer machines and CI. Do not commit authentication tokens. Packagist is not required for a VCS installation.
@@ -26,7 +26,7 @@ For local development, point a Composer path repository at your checkout:
 
 ```bash
 composer config repositories.fika '{"type":"path","url":"../fika-laravel","options":{"symlink":true}}'
-composer require fika/fika:@dev
+composer require fikamessaging/email:@dev
 ```
 
 Use the tagged VCS release for deployments. Laravel 12 requires PHP 8.2 or later; Laravel 13 requires PHP 8.3 or later. Composer selects compatible framework and Symfony versions.

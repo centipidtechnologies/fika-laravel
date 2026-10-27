@@ -1,5 +1,5 @@
 {
-    "name": "fika/fika",
+    "name": "fikamessaging/email",
     "description": "Laravel mail transport for Fika transactional email.",
     "type": "library",
     "license": "MIT",
